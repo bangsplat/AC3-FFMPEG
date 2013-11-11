@@ -12,7 +12,7 @@ use File::Find;
 # written by Theron Trowbridge
 # http://therontrowbridge.com
 # 
-# version 0
+# version 1.0
 # created 2013-11-09
 # modified 2013-11-11
 # 
@@ -65,18 +65,18 @@ if ( $debug_param ) {
 }
 
 if ( $version_param ) {
-	print "ac3ffmpeg.pl version 0\n";
+	print "ac3ffmpeg.pl version 1.0\n";
 	exit;
 }
 
 if ( $help_param ) {
 	print "ac3ffmpeg.pl\n";
-	print "version 0\n\n";
+	print "version 1.0\n\n";
 	print "--directory | -d <path>\n";
 	print "\toptional - defaults to current working directory\n";
 	print "--output | -o\n";
-	print "\toutput file";
-	print "\toptional - default is \"output_surround.ac3\"\n";
+	print "\toutput file\n";
+	print "\toptional - default is the left channel basename plus \".ac3\"\n";
 	print "--[no]execute | -[no]x\n";
 	print "\tdefault is true - execute the ffmpeg command\n";
 	print "\trequires ffmpeg to be installed and on the search path\n";
@@ -93,7 +93,6 @@ if ( $help_param ) {
 
 # set parameter defaults
 if ( $directory_param eq undef ) { ; }
-if ( $output_param eq undef ) { $output_param = "output_surround.ac3"; }
 if ( $execute_param eq undef ) { $execute_param = 1; }
 if ( $recurse_param eq undef ) { $recurse_param = 0; }
 
@@ -160,6 +159,12 @@ if ( $lfe_channel eq undef ) { die "ERROR: can't find LFE channel WAVE file\n"; 
 if ( $left_surround_channel eq undef ) { die "ERROR: can't find left surround channel WAVE file\n"; }
 if ( $right_surround_channel eq undef ) { die "ERROR: can't find right surround channel WAVE file\n"; }
 
+# come up with our default output file name if one was not supplied
+if ( $output_param eq undef ) {
+	$output_param = $center_channel;
+	$output_param =~ s/_C\.wav$/_51\.ac3/i;
+}
+
 # build the ffmpeg command
 $ffmpeg_command = "ffmpeg -i $left_channel -i $right_channel -i $center_channel " .
 	"-i $lfe_channel -i $left_surround_channel -i $right_surround_channel " .
@@ -169,10 +174,8 @@ $ffmpeg_command = "ffmpeg -i $left_channel -i $right_channel -i $center_channel 
 
 if ( $debug_param ) { print( "DEBUG: ffmpeg command: $ffmpeg_command\n" ); }
 
-
-
-
-exit;
+if ( $execute_param ) { system( $ffmpeg_command ); }
+else { print "$ffmpeg_command\n"; }
 
 
 sub find_wave_files {
