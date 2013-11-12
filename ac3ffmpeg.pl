@@ -12,18 +12,18 @@ use File::Find;
 # written by Theron Trowbridge
 # http://therontrowbridge.com
 # 
-# version 1.0
+# version 1.0.1
 # created 2013-11-09
 # modified 2013-11-11
 # 
 # use six mono WAVE files as sources
 # using standard channel naming convention
-# 	"_L" for left
-# 	"_R" for right
-# 	"_C" for center
-# 	"_LFE" for LFE
-# 	"_LS" for left surround
-# 	"_RS" for right surround
+# 	"_L" or "_LEFT" for left
+# 	"_R" or "_RIGHT" for right
+# 	"_C" or "_CENTER" for center
+# 	"_LFE" or "_SUB" for LFE
+# 	"_LS" or "_LSUR" for left surround
+# 	"_RS" or "_RSUR" for right surround
 # 
 # here's the command we want to use:
 # 
@@ -65,13 +65,13 @@ if ( $debug_param ) {
 }
 
 if ( $version_param ) {
-	print "ac3ffmpeg.pl version 1.0\n";
+	print "ac3ffmpeg.pl version 1.0.1\n";
 	exit;
 }
 
 if ( $help_param ) {
 	print "ac3ffmpeg.pl\n";
-	print "version 1.0\n\n";
+	print "version 1.0.1\n\n";
 	print "--directory | -d <path>\n";
 	print "\toptional - defaults to current working directory\n";
 	print "--output | -o\n";
@@ -117,37 +117,49 @@ if ( $debug_param ) { print "DEBUG: WAVE files: @wave_files\n"; }
 
 # find left channel
 for ( my $i = 0; $i < $num_wave_files; $i++ ) {
-	if ( @wave_files[$i] =~ /_L\./i ) { $left_channel = @wave_files[$i]; }
+	if ( ( @wave_files[$i] =~ /_L\./i ) || ( @wave_files[$i] =~ /_LEFT\./i ) ) {
+		$left_channel = @wave_files[$i];
+	}
 }
 if ( $debug_param ) { print "DEBUG: Left WAVE file: $left_channel\n"; }
 
 # find right channel
 for ( my $i = 0; $i < $num_wave_files; $i++ ) {
-	if ( @wave_files[$i] =~ /_R\./i ) { $right_channel = @wave_files[$i]; }
+	if ( ( @wave_files[$i] =~ /_R\./i ) || ( @wave_files[$i] =~ /_RIGHT\./i ) ) {
+		$right_channel = @wave_files[$i];
+	}
 }
 if ( $debug_param ) { print "DEBUG: Right WAVE file: $right_channel\n"; }
 
 # find center channel
 for ( my $i = 0; $i < $num_wave_files; $i++ ) {
-	if ( @wave_files[$i] =~ /_C\./i ) { $center_channel = @wave_files[$i]; }
+	if ( ( @wave_files[$i] =~ /_C\./i ) || ( @wave_files[$i] =~ /_CENTER\./i ) ) {
+		$center_channel = @wave_files[$i];
+	}
 }
 if ( $debug_param ) { print "DEBUG: Center WAVE file: $center_channel\n"; }
 
 # find LFE channel
 for ( my $i = 0; $i < $num_wave_files; $i++ ) {
-	if ( @wave_files[$i] =~ /_LFE\./i ) { $lfe_channel = @wave_files[$i]; }
+	if ( ( @wave_files[$i] =~ /_LFE\./i ) || ( @wave_files[$i] =~ /_SUB\./i ) ) {
+		$lfe_channel = @wave_files[$i];
+	}
 }
 if ( $debug_param ) { print "DEBUG: LFE WAVE file: $lfe_channel\n"; }
 
 # find left surround channel
 for ( my $i = 0; $i < $num_wave_files; $i++ ) {
-	if ( @wave_files[$i] =~ /_LS\./i ) { $left_surround_channel = @wave_files[$i]; }
+	if ( ( @wave_files[$i] =~ /_LS\./i ) || ( ( @wave_files[$i] =~ /_LSUR\./i ) ) ) {
+		$left_surround_channel = @wave_files[$i];
+	}
 }
 if ( $debug_param ) { print "DEBUG: Left surround WAVE file: $left_surround_channel\n"; }
 
 # find right surround channel
 for ( my $i = 0; $i < $num_wave_files; $i++ ) {
-	if ( @wave_files[$i] =~ /_RS\./i ) { $right_surround_channel = @wave_files[$i]; }
+	if ( ( @wave_files[$i] =~ /_RS\./i ) || ( @wave_files[$i] =~ /_RSUR\./i ) ) {
+		$right_surround_channel = @wave_files[$i];
+	}
 }
 if ( $debug_param ) { print "DEBUG: Right surround WAVE file: $right_surround_channel\n"; }
 
@@ -162,7 +174,7 @@ if ( $right_surround_channel eq undef ) { die "ERROR: can't find right surround 
 # come up with our default output file name if one was not supplied
 if ( $output_param eq undef ) {
 	$output_param = $center_channel;
-	$output_param =~ s/_C\.wav$/_51\.ac3/i;
+	$output_param =~ s/_[^_]*?\.wav$/_51\.ac3/i;
 }
 
 # build the ffmpeg command
@@ -190,4 +202,10 @@ sub clean_path {
 	$path =~ s/\/\.\//\//;	# remove extra "/./"
 	$path =~ s/^\.\///;
 	return( $path );
+
+	###
+	# 	this works on Mac/Linux and on Windows if all the WAVE files are local
+	#	need to make sure we don't screw up file paths on Windows machines
+	###
+
 }
