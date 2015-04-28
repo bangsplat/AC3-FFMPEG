@@ -12,9 +12,9 @@ use File::Find;
 # written by Theron Trowbridge
 # http://therontrowbridge.com
 # 
-# version 1.0.1
+# version 1.1
 # created 2013-11-09
-# modified 2013-11-11
+# modified 2015-04-28
 # 
 # use six mono WAVE files as sources
 # using standard channel naming convention
@@ -28,8 +28,8 @@ use File::Find;
 # here's the command we want to use:
 # 
 # ffmpeg -i left.wav -i right.wav -i center.wav -i lfe.wav -i left_surround.wav
-# -i right_surround -ab 640k -dialnorm “-27” -center_mixlev 0.707 -surround_mixlev 0.707
-# -filter_complex “[0:a][1:a][2:a][3:a][4:a][5:a] amerge=inputs=6” output_surround.ac3 
+# -i right_surround -ab 640k -dialnorm "-24" -center_mixlev 0.707 -surround_mixlev 0.707
+# -filter_complex "[0:a][1:a][2:a][3:a][4:a][5:a] amerge=inputs=6" output_surround.ac3 
 #
 # search through the starting folder looking for ".wav" files and build a list
 # look through list looking for each channel
@@ -37,9 +37,11 @@ use File::Find;
 # 
 # this will require having ffmpeg installd and on the path
 # have an option to output the command to STDOUT
-# 
+#
+# version 1.1 - add ability to adjust dialnorm value 
+# 	also changing default dialnorm value to -24 dB (was -27 dB)
 
-my ( $directory_param, $output_param, $execute_param, $recurse_param, $help_param, $version_param, $debug_param );
+my ( $directory_param, $output_param, $execute_param, $recurse_param, $help_param, $dialnorm_param, $version_param, $debug_param );
 my ( @wave_files, $num_wave_files );
 my ( $left_channel, $right_channel, $center_channel, $lfe_channel, $left_surround_channel, $right_surround_channel );
 my ( $ffmpeg_command );
@@ -49,6 +51,7 @@ GetOptions( 'directory|d=s'	=>	\$directory_param,
 			'output|o=s'	=>	\$output_param,
 			'execute|x!'	=>	\$execute_param,
 			'recurse|r!'	=>	\$recurse_param,
+			'dialnorm|d=s'	=>	\$dialnorm_param,
 			'debug'			=>	\$debug_param,
 			'help|?'		=>	\$help_param,
 			'version'		=>	\$version_param );
@@ -59,19 +62,20 @@ if ( $debug_param ) {
 	print "output_param: $output_param\n";
 	print "execute_param: $execute_param\n";
 	print "recurse_param: $recurse_param\n";
+	print "dialnorm_param: $dialnorm_param\n";
 	print "debug_param: $debug_param\n";
 	print "help_param: $help_param\n";
 	print "version_param: $version_param\n\n";
 }
 
 if ( $version_param ) {
-	print "ac3ffmpeg.pl version 1.0.1\n";
+	print "ac3ffmpeg.pl version 1.1\n";
 	exit;
 }
 
 if ( $help_param ) {
 	print "ac3ffmpeg.pl\n";
-	print "version 1.0.1\n\n";
+	print "version 1.1\n\n";
 	print "--directory | -d <path>\n";
 	print "\toptional - defaults to current working directory\n";
 	print "--output | -o\n";
@@ -84,6 +88,9 @@ if ( $help_param ) {
 	print "--[no]recurse | -[no]r\n";
 	print "\tlook in subfolders for WAVE files\n";
 	print "\tdefault is false - only look in current working directory\n";
+	print "--dialnorm | -d <value>\n";
+	print "\tuse non-default dialnorm value\n";
+	print "\tdefault value is -24 dB\n";
 	print "--version\n";
 	print "\tdisplay version number\n";
 	print "--help | -?\n";
@@ -95,6 +102,12 @@ if ( $help_param ) {
 if ( $directory_param eq undef ) { ; }
 if ( $execute_param eq undef ) { $execute_param = 1; }
 if ( $recurse_param eq undef ) { $recurse_param = 0; }
+# dialnorm is a bit more complicated
+if ( $dialnorm_param eq undef ) { $dialnorm_param = 24; }
+$dialnorm_param = abs( $dialnorm_param );	# remove the negative sign if it was used
+$dialnorm_param = int( $dialnorm_param );	# strip any fractional part
+# make sure it is inside the appropriate range:
+if ( ( abs( $dialnorm_param ) lt 1 ) || ( abs( $dialnorm_param ) gt 31 ) ) { $dialnorm_param = 24; }
 
 if ( $debug_param ) {
 	print "DEBUG: adjusted parameters:\n";
@@ -102,6 +115,7 @@ if ( $debug_param ) {
 	print "output_param: $output_param\n";
 	print "execute_param: $execute_param\n";
 	print "recurse_param: $recurse_param\n";
+	print "dialnorm_param: $dialnorm_param\n";
 	print "debug_param: $debug_param\n";
 	print "help_param: $help_param\n";
 	print "version_param: $version_param\n\n";
@@ -180,9 +194,8 @@ if ( $output_param eq undef ) {
 # build the ffmpeg command
 $ffmpeg_command = "ffmpeg -i $left_channel -i $right_channel -i $center_channel " .
 	"-i $lfe_channel -i $left_surround_channel -i $right_surround_channel " .
-	"-ab 640k -dialnorm \"-27\" -center_mixlev 0.707 -surround_mixlev 0.707 " .
-	"-filter_complex \"[0:a][1:a][2:a][3:a][4:a][5:a] amerge=inputs=6\" " .
-	"$output_param";
+	"-ab 640k -dialnorm \"-$dialnorm_param\" -center_mixlev 0.707 -surround_mixlev 0.707 " .
+	"-filter_complex \"[0:a][1:a][2:a][3:a][4:a][5:a] amerge=inputs=6\" $output_param";
 
 if ( $debug_param ) { print( "DEBUG: ffmpeg command: $ffmpeg_command\n" ); }
 
