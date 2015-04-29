@@ -12,9 +12,9 @@ use File::Find;
 # written by Theron Trowbridge
 # http://therontrowbridge.com
 # 
-# version 1.1
+# version 1.1.1
 # created 2013-11-09
-# modified 2015-04-28
+# modified 2015-04-29
 # 
 # use six mono WAVE files as sources
 # using standard channel naming convention
@@ -40,6 +40,7 @@ use File::Find;
 #
 # version 1.1 - add ability to adjust dialnorm value 
 # 	also changing default dialnorm value to -24 dB (was -27 dB)
+# version 1.1.1 - changing default dialnorm value to -31 dB
 
 my ( $directory_param, $output_param, $execute_param, $recurse_param, $help_param, $dialnorm_param, $version_param, $debug_param );
 my ( @wave_files, $num_wave_files );
@@ -103,11 +104,11 @@ if ( $directory_param eq undef ) { ; }
 if ( $execute_param eq undef ) { $execute_param = 1; }
 if ( $recurse_param eq undef ) { $recurse_param = 0; }
 # dialnorm is a bit more complicated
-if ( $dialnorm_param eq undef ) { $dialnorm_param = 24; }
+if ( $dialnorm_param eq undef ) { $dialnorm_param = 31; }
 $dialnorm_param = abs( $dialnorm_param );	# remove the negative sign if it was used
 $dialnorm_param = int( $dialnorm_param );	# strip any fractional part
 # make sure it is inside the appropriate range:
-if ( ( abs( $dialnorm_param ) lt 1 ) || ( abs( $dialnorm_param ) gt 31 ) ) { $dialnorm_param = 24; }
+if ( ( abs( $dialnorm_param ) lt 1 ) || ( abs( $dialnorm_param ) gt 31 ) ) { $dialnorm_param = 31; }
 
 if ( $debug_param ) {
 	print "DEBUG: adjusted parameters:\n";
